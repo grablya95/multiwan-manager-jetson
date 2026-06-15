@@ -1,4 +1,5 @@
 # Multi-WAN Manager для Jatson
+<img width="754" height="513" alt="pic-1" src="https://github.com/user-attachments/assets/4b70d041-cce9-47c7-b4fd-da8b642ef045" />
 
 Production-орієнтований сервіс автоматичного перемикання між кількома WAN-інтерфейсами на NVIDIA Jatson/Linux.
 
