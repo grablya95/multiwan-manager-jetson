@@ -1,0 +1,1013 @@
+<!doctype html>
+<html lang="uk" data-theme="dark">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Multi-WAN Manager для Jatson</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg: #111318;
+            --surface: #191c22;
+            --surface-raised: #20242c;
+            --line: #303640;
+            --line-strong: #414956;
+            --text: #f2f4f7;
+            --muted: #9ca6b4;
+            --accent: #4d8dff;
+            --accent-hover: #70a4ff;
+            --green: #35c58b;
+            --yellow: #e9ae3a;
+            --red: #ef6262;
+            --focus: rgba(77, 141, 255, .24);
+            --shadow: 0 12px 32px rgba(0, 0, 0, .2);
+        }
+
+        [data-theme="light"] {
+            color-scheme: light;
+            --bg: #f3f5f8;
+            --surface: #ffffff;
+            --surface-raised: #f7f9fb;
+            --line: #dce1e8;
+            --line-strong: #c8d0db;
+            --text: #17202b;
+            --muted: #667386;
+            --accent: #2563eb;
+            --accent-hover: #174fc5;
+            --green: #138a61;
+            --yellow: #a96c0b;
+            --red: #c43d3d;
+            --focus: rgba(37, 99, 235, .16);
+            --shadow: 0 12px 32px rgba(26, 37, 51, .09);
+        }
+
+        * { box-sizing: border-box; }
+        html { min-width: 320px; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: var(--bg);
+            color: var(--text);
+            font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            letter-spacing: 0;
+        }
+
+        button, input, select { font: inherit; }
+        button { color: inherit; }
+        [hidden] { display: none !important; }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            background: color-mix(in srgb, var(--surface), transparent 4%);
+            border-bottom: 1px solid var(--line);
+            backdrop-filter: blur(12px);
+        }
+
+        .topbar-inner, .shell {
+            width: min(1320px, 100%);
+            margin: 0 auto;
+            padding-left: 20px;
+            padding-right: 20px;
+        }
+
+        .topbar-inner {
+            min-height: 62px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .brand, .toolbar, .service-state, .card-actions, .status-line {
+            display: flex;
+            align-items: center;
+        }
+
+        .brand { gap: 11px; min-width: 0; }
+        .brand-mark {
+            width: 32px;
+            height: 32px;
+            display: grid;
+            place-items: center;
+            border-radius: 7px;
+            background: var(--accent);
+            color: white;
+            font-weight: 800;
+            flex: 0 0 auto;
+        }
+        .brand-name { font-size: 17px; font-weight: 750; line-height: 1.15; }
+        .service-state { gap: 7px; color: var(--muted); font-size: 12px; }
+        .service-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--yellow);
+        }
+        .service-dot.online { background: var(--green); }
+        .service-dot.offline { background: var(--red); }
+        .toolbar { gap: 8px; }
+
+        .icon-button, .button {
+            border: 1px solid var(--line);
+            background: var(--surface-raised);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: border-color .16s ease, background .16s ease, color .16s ease;
+        }
+        .icon-button {
+            width: 38px;
+            height: 38px;
+            padding: 0;
+            display: grid;
+            place-items: center;
+            font-size: 20px;
+        }
+        .button {
+            min-height: 38px;
+            padding: 8px 12px;
+            font-weight: 650;
+        }
+        .button:hover, .icon-button:hover { border-color: var(--accent); }
+        .button.primary {
+            border-color: var(--accent);
+            background: var(--accent);
+            color: white;
+        }
+        .button.primary:hover { background: var(--accent-hover); }
+        .button.active {
+            border-color: var(--accent);
+            background: var(--focus);
+            color: var(--accent-hover);
+        }
+        .button:disabled, .icon-button:disabled { opacity: .55; cursor: wait; }
+
+        .shell { padding-top: 18px; padding-bottom: 28px; }
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--surface);
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+        .summary-item {
+            min-width: 0;
+            padding: 14px 16px;
+            border-right: 1px solid var(--line);
+        }
+        .summary-item:last-child { border-right: 0; }
+        .summary-label {
+            display: block;
+            color: var(--muted);
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+        .summary-value {
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 18px;
+            font-weight: 750;
+        }
+
+        .alert {
+            display: none;
+            margin-bottom: 14px;
+            padding: 11px 13px;
+            border: 1px solid var(--line);
+            border-left: 3px solid var(--yellow);
+            border-radius: 6px;
+            background: var(--surface);
+            color: var(--text);
+            font-size: 13px;
+        }
+        .alert.visible { display: block; }
+        .alert.error { border-left-color: var(--red); }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 310px minmax(0, 1fr);
+            gap: 16px;
+            align-items: start;
+        }
+        .sidebar {
+            position: sticky;
+            top: 80px;
+            display: grid;
+            gap: 12px;
+        }
+        .panel, .provider-card {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+        }
+        .panel { padding: 14px; }
+        .panel-title {
+            margin: 0 0 12px;
+            font-size: 14px;
+            font-weight: 750;
+        }
+        .mode-selector { display: grid; gap: 7px; }
+        .mode-select-wrap { position: relative; }
+        .mode-select-wrap::after {
+            content: "⌄";
+            position: absolute;
+            right: 11px;
+            top: 50%;
+            transform: translateY(-55%);
+            color: var(--muted);
+            pointer-events: none;
+            font-size: 18px;
+        }
+        .mode-select {
+            min-height: 44px;
+            padding-right: 34px;
+            appearance: none;
+            border-color: var(--line-strong);
+            font-weight: 700;
+        }
+        .mode-help, .setting-description {
+            color: var(--muted);
+            font-size: 11px;
+            line-height: 1.35;
+        }
+        .setting-copy {
+            display: grid;
+            gap: 3px;
+            min-width: 0;
+        }
+        .setting-copy strong {
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .setting-row {
+            min-height: 46px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            border-top: 1px solid var(--line);
+            font-size: 13px;
+        }
+        .setting-row:first-of-type { border-top: 0; }
+        .switch {
+            position: relative;
+            width: 38px;
+            height: 22px;
+            flex: 0 0 auto;
+            overflow: hidden;
+        }
+        .switch input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+            width: 1px;
+            height: 1px;
+            min-height: 0;
+            padding: 0;
+            margin: 0;
+            border: 0;
+        }
+        .switch span {
+            position: absolute;
+            inset: 0;
+            border-radius: 999px;
+            background: var(--line-strong);
+            cursor: pointer;
+            transition: background .16s ease;
+        }
+        .switch span::after {
+            content: "";
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            top: 3px;
+            left: 3px;
+            border-radius: 50%;
+            background: white;
+            transition: transform .16s ease;
+        }
+        .switch input:checked + span { background: var(--accent); }
+        .switch input:checked + span::after { transform: translateX(16px); }
+        .switch input:focus-visible + span { box-shadow: 0 0 0 3px var(--focus); }
+
+        .fields {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+        .field { display: grid; gap: 5px; min-width: 0; }
+        .field.full { grid-column: 1 / -1; }
+        label {
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.25;
+        }
+        input, select {
+            width: 100%;
+            min-width: 0;
+            min-height: 38px;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            background: var(--surface-raised);
+            color: var(--text);
+            padding: 8px 10px;
+            outline: none;
+        }
+        input:focus, select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--focus);
+        }
+
+        details {
+            border-top: 1px solid var(--line);
+            margin-top: 12px;
+            padding-top: 10px;
+        }
+        summary {
+            cursor: pointer;
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 650;
+            user-select: none;
+        }
+        details .fields { margin-top: 12px; }
+        .save-row { display: grid; gap: 8px; }
+        .save-row .button { width: 100%; }
+        .save-state {
+            min-height: 17px;
+            color: var(--muted);
+            text-align: center;
+            font-size: 12px;
+        }
+        .persist-note {
+            color: var(--muted);
+            font-size: 11px;
+            line-height: 1.35;
+            text-align: center;
+        }
+
+        .provider-list { display: grid; gap: 12px; min-width: 0; }
+        .provider-card {
+            overflow: hidden;
+            transition: border-color .16s ease, box-shadow .16s ease;
+        }
+        .provider-card.active {
+            border-color: var(--accent);
+            box-shadow: var(--shadow), inset 3px 0 0 var(--accent);
+        }
+        .provider-main { padding: 15px 16px 0; }
+        .provider-head {
+            display: grid;
+            grid-template-columns: minmax(180px, 1fr) auto;
+            gap: 14px;
+            align-items: start;
+        }
+        .provider-name {
+            min-width: 0;
+            font-size: 17px;
+            font-weight: 750;
+            overflow-wrap: anywhere;
+        }
+        .provider-alias {
+            color: var(--accent-hover);
+            font-size: 12px;
+            font-weight: 650;
+            margin-top: 3px;
+        }
+        .provider-meta {
+            color: var(--muted);
+            font-size: 12px;
+            margin-top: 4px;
+            overflow-wrap: anywhere;
+        }
+        .card-actions { gap: 7px; flex-wrap: wrap; justify-content: flex-end; }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            min-height: 28px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            padding: 4px 9px;
+            background: var(--surface-raised);
+            font-size: 11px;
+            font-weight: 750;
+            white-space: nowrap;
+        }
+        .badge.stable { color: var(--green); border-color: color-mix(in srgb, var(--green), transparent 45%); }
+        .badge.degraded { color: var(--yellow); border-color: color-mix(in srgb, var(--yellow), transparent 45%); }
+        .badge.down { color: var(--red); border-color: color-mix(in srgb, var(--red), transparent 45%); }
+        .badge.current { color: white; background: var(--accent); border-color: var(--accent); }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            margin-top: 14px;
+            border-top: 1px solid var(--line);
+            border-bottom: 1px solid var(--line);
+        }
+        .stat {
+            padding: 12px 10px 12px 0;
+            border-right: 1px solid var(--line);
+        }
+        .stat:not(:first-child) { padding-left: 12px; }
+        .stat:last-child { border-right: 0; }
+        .stat-label { display: block; color: var(--muted); font-size: 11px; margin-bottom: 4px; }
+        .stat-value { display: block; font-size: 17px; font-weight: 750; white-space: nowrap; }
+
+        .provider-settings {
+            padding: 0 16px 15px;
+            border-top: 0;
+            margin-top: 0;
+        }
+        .provider-settings summary { padding-top: 11px; }
+        .empty {
+            padding: 40px 18px;
+            border: 1px dashed var(--line-strong);
+            border-radius: 8px;
+            color: var(--muted);
+            text-align: center;
+        }
+
+        .toast {
+            position: fixed;
+            right: 18px;
+            bottom: 18px;
+            z-index: 30;
+            max-width: min(380px, calc(100vw - 36px));
+            padding: 11px 14px;
+            border: 1px solid var(--line);
+            border-left: 3px solid var(--green);
+            border-radius: 6px;
+            background: var(--surface);
+            box-shadow: var(--shadow);
+            opacity: 0;
+            transform: translateY(8px);
+            pointer-events: none;
+            transition: opacity .18s ease, transform .18s ease;
+            font-size: 13px;
+        }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast.error { border-left-color: var(--red); }
+
+        @media (max-width: 980px) {
+            .layout { grid-template-columns: 1fr; }
+            .sidebar { position: static; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .save-panel { grid-column: 1 / -1; }
+        }
+        @media (max-width: 700px) {
+            .topbar-inner, .shell { padding-left: 12px; padding-right: 12px; }
+            .service-state { display: none; }
+            .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .summary-item:nth-child(2) { border-right: 0; }
+            .summary-item:nth-child(-n + 2) { border-bottom: 1px solid var(--line); }
+            .sidebar { grid-template-columns: 1fr; }
+            .save-panel { grid-column: auto; }
+            .provider-head { grid-template-columns: 1fr; }
+            .card-actions { justify-content: flex-start; }
+        }
+        @media (max-width: 480px) {
+            .brand-name { font-size: 15px; }
+            .summary-value { font-size: 16px; }
+            .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .stat:nth-child(2) { border-right: 0; }
+            .stat:nth-child(-n + 2) { border-bottom: 1px solid var(--line); }
+            .fields { grid-template-columns: 1fr; }
+            .field.full { grid-column: auto; }
+        }
+    </style>
+</head>
+<body>
+    <header class="topbar">
+        <div class="topbar-inner">
+            <div class="brand">
+                <span class="brand-mark">MW</span>
+                <div>
+                    <div class="brand-name">Multi-WAN Manager для Jatson</div>
+                    <div class="service-state">
+                        <span class="service-dot" id="service-dot"></span>
+                        <span id="service-text">Підключення...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="toolbar">
+                <button class="icon-button" id="theme-button" type="button" title="Змінити тему" aria-label="Змінити тему">◐</button>
+                <button class="icon-button" id="rescan-button" type="button" title="Пересканувати інтерфейси" aria-label="Пересканувати інтерфейси">↻</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="shell">
+        <section class="summary" aria-label="Стан системи">
+            <div class="summary-item">
+                <span class="summary-label">Режим</span>
+                <strong class="summary-value" id="mode-label">---</strong>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Активний WAN</span>
+                <strong class="summary-value" id="active-provider">---</strong>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Доступні канали</span>
+                <strong class="summary-value" id="available-count">0 / 0</strong>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Цикл перевірки</span>
+                <strong class="summary-value" id="check-duration">---</strong>
+            </div>
+        </section>
+
+        <div class="alert error" id="error-alert"></div>
+        <div class="alert" id="warning-alert"></div>
+
+        <div class="layout">
+            <aside class="sidebar">
+                <section class="panel">
+                    <h2 class="panel-title">Режим роботи</h2>
+                    <div class="mode-selector">
+                        <label for="mode-select">Канал доступу до Інтернету</label>
+                        <div class="mode-select-wrap">
+                            <select class="mode-select" id="mode-select"></select>
+                        </div>
+                        <div class="mode-help" id="mode-help">Автоматично вибирає доступний WAN за пріоритетом.</div>
+                    </div>
+                </section>
+
+                <section class="panel">
+                    <h2 class="panel-title">Failover</h2>
+                    <div class="setting-row">
+                        <div class="setting-copy">
+                            <strong>Аварійний fallback</strong>
+                            <span class="setting-description">Повертає Auto, якщо зафіксований WAN упав.</span>
+                        </div>
+                        <label class="switch" title="Повернути manual режим в auto при падінні каналу">
+                            <input id="auto_fallback" type="checkbox">
+                            <span></span>
+                        </label>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-copy">
+                            <strong>Реакція на деградацію</strong>
+                            <span class="setting-description">Перемикає WAN при високому ping або втратах.</span>
+                        </div>
+                        <label class="switch" title="Перемикати канал при перевищенні ping або loss">
+                            <input id="failover_on_degraded" type="checkbox">
+                            <span></span>
+                        </label>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-copy">
+                            <strong>Очищення conntrack</strong>
+                            <span class="setting-description">Скидає старі сесії після зміни WAN.</span>
+                        </div>
+                        <label class="switch" title="Скинути активні з'єднання після перемикання">
+                            <input id="flush_conntrack" type="checkbox">
+                            <span></span>
+                        </label>
+                    </div>
+                </section>
+
+                <section class="panel">
+                    <h2 class="panel-title">Таймінги</h2>
+                    <div class="fields">
+                        <div class="field">
+                            <label for="interval_seconds">Інтервал, сек</label>
+                            <input id="interval_seconds" type="number" min="2" max="300">
+                        </div>
+                        <div class="field">
+                            <label for="switch_cooldown_seconds">Cooldown, сек</label>
+                            <input id="switch_cooldown_seconds" type="number" min="0" max="3600">
+                        </div>
+                        <div class="field">
+                            <label for="down_failures">Помилок до switch</label>
+                            <input id="down_failures" type="number" min="1" max="20">
+                        </div>
+                        <div class="field">
+                            <label for="up_successes">Успіхів до switch</label>
+                            <input id="up_successes" type="number" min="1" max="20">
+                        </div>
+                        <div class="field full">
+                            <label for="primary_recovery_successes">Успіхів до повернення</label>
+                            <input id="primary_recovery_successes" type="number" min="1" max="30">
+                        </div>
+                    </div>
+                    <details>
+                        <summary>Системні параметри</summary>
+                        <div class="fields">
+                            <div class="field">
+                                <label for="ping_count">Ping пакетів</label>
+                                <input id="ping_count" type="number" min="1" max="10">
+                            </div>
+                            <div class="field">
+                                <label for="ping_timeout_seconds">Timeout, сек</label>
+                                <input id="ping_timeout_seconds" type="number" min="1" max="20">
+                            </div>
+                            <div class="field full">
+                                <label for="route_audit_seconds">Аудит маршрутів, сек</label>
+                                <input id="route_audit_seconds" type="number" min="10" max="3600">
+                            </div>
+                        </div>
+                    </details>
+                </section>
+
+                <section class="panel save-panel">
+                    <div class="save-row">
+                        <button class="button primary" id="save-button" type="button">Зберегти налаштування</button>
+                        <div class="save-state" id="save-state"></div>
+                        <div class="persist-note">Параметри та вибраний режим зберігаються після перезапуску.</div>
+                    </div>
+                </section>
+            </aside>
+
+            <section class="provider-list" id="provider-list" aria-live="polite"></section>
+        </div>
+    </main>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        let latestData = null;
+        let configLoaded = false;
+        let providerDomSignature = "";
+        let modeDomSignature = "";
+        let fetchInFlight = false;
+        let pollTimer = null;
+        let toastTimer = null;
+
+        const checkboxKeys = ["auto_fallback", "failover_on_degraded", "flush_conntrack"];
+        const numberKeys = [
+            "interval_seconds",
+            "switch_cooldown_seconds",
+            "down_failures",
+            "up_successes",
+            "primary_recovery_successes",
+            "ping_count",
+            "ping_timeout_seconds",
+            "route_audit_seconds"
+        ];
+
+        function escapeHtml(value) {
+            return String(value ?? "")
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll('"', "&quot;");
+        }
+
+        function setTheme(theme) {
+            document.documentElement.setAttribute("data-theme", theme);
+            localStorage.setItem("wan-theme", theme);
+        }
+
+        function showToast(message, isError = false) {
+            const toast = document.getElementById("toast");
+            toast.textContent = message;
+            toast.className = isError ? "toast error show" : "toast show";
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => { toast.className = "toast"; }, 2600);
+        }
+
+        function statusClass(status) {
+            if (status === "Стабільний") return "badge stable";
+            if (status === "Деградація") return "badge degraded";
+            if (status === "Упав") return "badge down";
+            return "badge";
+        }
+
+        function modeLabel(mode, providers) {
+            if (mode === "auto") return "Автоматичний";
+            if (mode?.startsWith("manual:")) {
+                const provider = providers.find((item) => item.key === mode.slice(7));
+                return provider ? `Фікс: ${provider.hardware_name || provider.iface}` : "Ручний";
+            }
+            return "---";
+        }
+
+        function providerAlias(provider) {
+            const label = String(provider.label || "").trim();
+            return label && label !== provider.hardware_name ? label : "";
+        }
+
+        function providerOptionLabel(provider) {
+            return provider.hardware_name || provider.iface || "WAN";
+        }
+
+        function providerDetails(provider) {
+            const parts = [];
+            if (provider.hardware_model) parts.push(provider.hardware_model);
+            if (provider.driver) parts.push(`driver ${provider.driver}`);
+            if (provider.bus) parts.push(provider.bus);
+            parts.push(provider.local_ip || "без IP");
+            parts.push(`gateway ${provider.gateway || "---"}`);
+            parts.push(`пріоритет ${provider.priority + 1}`);
+            return parts.join(" · ");
+        }
+
+        function setInputValue(id, value) {
+            const input = document.getElementById(id);
+            if (input && document.activeElement !== input) input.value = value ?? "";
+        }
+
+        function renderModeSelector(data) {
+            const signature = `${data.mode}|${data.providers.map((item) =>
+                `${item.key}:${item.hardware_name}:${item.label}`
+            ).join("|")}`;
+            if (signature === modeDomSignature) return;
+            modeDomSignature = signature;
+            const options = [
+                `<option value="auto">Автоматичний failover</option>`
+            ];
+            data.providers.forEach((provider) => {
+                const mode = `manual:${provider.key}`;
+                options.push(
+                    `<option value="${escapeHtml(mode)}">Фіксований: ${escapeHtml(providerOptionLabel(provider))}</option>`
+                );
+            });
+            const select = document.getElementById("mode-select");
+            select.innerHTML = options.join("");
+            select.value = data.mode;
+            const active = data.providers.find((provider) => `manual:${provider.key}` === data.mode);
+            document.getElementById("mode-help").textContent = active
+                ? `Трафік зафіксовано через ${providerOptionLabel(active)}.`
+                : "Автоматично вибирає доступний WAN за пріоритетом.";
+        }
+
+        function providerCard(provider, activeProvider) {
+            const stats = provider.stats || {};
+            const active = provider.key === activeProvider;
+            return `
+                <article class="provider-card ${active ? "active" : ""}" id="card-${provider.key}">
+                    <div class="provider-main">
+                        <div class="provider-head">
+                            <div>
+                                <div class="provider-name">${escapeHtml(provider.hardware_name || provider.iface || "WAN")}</div>
+                                <div class="provider-alias" id="alias-${provider.key}" ${providerAlias(provider) ? "" : "hidden"}>Власна назва: ${escapeHtml(providerAlias(provider))}</div>
+                                <div class="provider-meta" id="details-${provider.key}">
+                                    ${escapeHtml(providerDetails(provider))}
+                                </div>
+                            </div>
+                            <div class="card-actions">
+                                <span class="${statusClass(stats.status)}" id="status-${provider.key}">${escapeHtml(stats.status || "---")}</span>
+                                <span class="badge current" id="active-${provider.key}" ${active ? "" : "hidden"}>Активний</span>
+                            </div>
+                        </div>
+                        <div class="stats">
+                            <div class="stat">
+                                <span class="stat-label">Ping</span>
+                                <strong class="stat-value" id="ping-${provider.key}">${Number(stats.ping || 0).toFixed(1)} ms</strong>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Loss</span>
+                                <strong class="stat-value" id="loss-${provider.key}">${stats.loss ?? 100}%</strong>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Jitter</span>
+                                <strong class="stat-value" id="jitter-${provider.key}">${Number(stats.jitter || 0).toFixed(1)} ms</strong>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Fail / Recover</span>
+                                <strong class="stat-value" id="counters-${provider.key}">${provider.fail_count || 0} / ${provider.recover_count || 0}</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <details class="provider-settings">
+                        <summary>Налаштування каналу</summary>
+                        <div class="fields">
+                            <div class="field full">
+                                <label for="${provider.key}_label">Власна назва, необов'язково</label>
+                                <input id="${provider.key}_label" value="${escapeHtml(providerAlias(provider))}" placeholder="${escapeHtml(provider.hardware_name || provider.iface)}">
+                            </div>
+                            <div class="field full">
+                                <label for="${provider.key}_targets">Track hosts</label>
+                                <input id="${provider.key}_targets" value="${escapeHtml((provider.targets || []).join(", "))}">
+                            </div>
+                            <div class="field">
+                                <label for="${provider.key}_priority">Пріоритет</label>
+                                <input id="${provider.key}_priority" type="number" min="1" max="999" value="${provider.priority + 1}">
+                            </div>
+                            <div class="field">
+                                <label for="${provider.key}_ping_threshold">Max ping, ms</label>
+                                <input id="${provider.key}_ping_threshold" type="number" step="0.1" min="1" max="5000" value="${provider.ping_threshold}">
+                            </div>
+                            <div class="field">
+                                <label for="${provider.key}_loss_threshold">Max loss, %</label>
+                                <input id="${provider.key}_loss_threshold" type="number" min="0" max="100" value="${provider.loss_threshold}">
+                            </div>
+                        </div>
+                    </details>
+                </article>
+            `;
+        }
+
+        function updateProviderMetrics(provider, activeProvider) {
+            const stats = provider.stats || {};
+            const card = document.getElementById(`card-${provider.key}`);
+            if (!card) return;
+            const active = provider.key === activeProvider;
+            card.className = active ? "provider-card active" : "provider-card";
+            document.getElementById(`active-${provider.key}`).hidden = !active;
+            const alias = document.getElementById(`alias-${provider.key}`);
+            alias.textContent = providerAlias(provider) ? `Власна назва: ${providerAlias(provider)}` : "";
+            alias.hidden = !providerAlias(provider);
+            document.getElementById(`details-${provider.key}`).textContent = providerDetails(provider);
+            const status = document.getElementById(`status-${provider.key}`);
+            status.textContent = stats.status || "---";
+            status.className = statusClass(stats.status);
+            document.getElementById(`ping-${provider.key}`).textContent = `${Number(stats.ping || 0).toFixed(1)} ms`;
+            document.getElementById(`loss-${provider.key}`).textContent = `${stats.loss ?? 100}%`;
+            document.getElementById(`jitter-${provider.key}`).textContent = `${Number(stats.jitter || 0).toFixed(1)} ms`;
+            document.getElementById(`counters-${provider.key}`).textContent =
+                `${provider.fail_count || 0} / ${provider.recover_count || 0}`;
+        }
+
+        function loadGlobalConfig(data) {
+            if (configLoaded) return;
+            const config = data.config || {};
+            checkboxKeys.forEach((key) => {
+                const input = document.getElementById(key);
+                if (input) input.checked = Boolean(config[key]);
+            });
+            numberKeys.forEach((key) => setInputValue(key, config[key]));
+            configLoaded = true;
+        }
+
+        function setAlert(id, text) {
+            const alert = document.getElementById(id);
+            alert.textContent = text || "";
+            alert.classList.toggle("visible", Boolean(text));
+        }
+
+        function updateUI(data) {
+            latestData = data;
+            const providers = data.providers || [];
+            const active = providers.find((item) => item.key === data.active_provider);
+            const available = providers.filter((item) => ["Стабільний", "Деградація"].includes(item.stats?.status)).length;
+
+            document.getElementById("mode-label").textContent = modeLabel(data.mode, providers);
+            document.getElementById("active-provider").textContent = active
+                ? providerOptionLabel(active)
+                : "---";
+            document.getElementById("available-count").textContent = `${available} / ${providers.length}`;
+            document.getElementById("check-duration").textContent =
+                data.last_check_duration_ms ? `${data.last_check_duration_ms} ms` : "---";
+            document.getElementById("service-dot").className = "service-dot online";
+            document.getElementById("service-text").textContent =
+                data.last_check_at ? `Оновлено ${new Date(data.last_check_at * 1000).toLocaleTimeString("uk-UA")}` : "Працює";
+            setAlert("error-alert", data.last_error);
+            setAlert("warning-alert", (data.warnings || []).join(" "));
+            loadGlobalConfig(data);
+            renderModeSelector(data);
+
+            const signature = providers.map((provider) =>
+                [
+                    provider.key,
+                    provider.iface,
+                    provider.label,
+                    provider.hardware_name,
+                    provider.hardware_model,
+                    provider.driver,
+                    provider.bus,
+                    provider.priority,
+                    provider.gateway,
+                    (provider.targets || []).join(","),
+                    provider.ping_threshold,
+                    provider.loss_threshold
+                ].join("|")
+            ).join(";");
+            if (signature !== providerDomSignature) {
+                providerDomSignature = signature;
+                document.getElementById("provider-list").innerHTML = providers.length
+                    ? providers.map((provider) => providerCard(provider, data.active_provider)).join("")
+                    : `<div class="empty">WAN-інтерфейси не знайдено</div>`;
+            } else {
+                providers.forEach((provider) => updateProviderMetrics(provider, data.active_provider));
+            }
+        }
+
+        async function fetchJson(url, options = {}) {
+            const response = await fetch(url, options);
+            const payload = await response.json();
+            if (!response.ok) throw new Error(payload.message || `HTTP ${response.status}`);
+            return payload;
+        }
+
+        async function fetchStatus() {
+            if (fetchInFlight) return;
+            fetchInFlight = true;
+            try {
+                updateUI(await fetchJson("/api/status"));
+            } catch (error) {
+                document.getElementById("service-dot").className = "service-dot offline";
+                document.getElementById("service-text").textContent = "API недоступне";
+                setAlert("error-alert", `API недоступне: ${error.message}`);
+            } finally {
+                fetchInFlight = false;
+                schedulePoll();
+            }
+        }
+
+        function schedulePoll() {
+            clearTimeout(pollTimer);
+            pollTimer = setTimeout(fetchStatus, document.hidden ? 15000 : 4000);
+        }
+
+        async function setMode(mode) {
+            try {
+                const payload = await fetchJson("/api/mode", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ mode })
+                });
+                updateUI(payload.state);
+            } catch (error) {
+                showToast(error.message, true);
+            }
+        }
+
+        function collectConfig() {
+            const payload = { providers: {} };
+            checkboxKeys.forEach((key) => {
+                payload[key] = document.getElementById(key).checked;
+            });
+            numberKeys.forEach((key) => {
+                payload[key] = document.getElementById(key).value;
+            });
+            (latestData?.providers || []).forEach((provider) => {
+                payload.providers[provider.key] = {
+                    label: document.getElementById(`${provider.key}_label`)?.value,
+                    priority: document.getElementById(`${provider.key}_priority`)?.value,
+                    targets: document.getElementById(`${provider.key}_targets`)?.value,
+                    ping_threshold: document.getElementById(`${provider.key}_ping_threshold`)?.value,
+                    loss_threshold: document.getElementById(`${provider.key}_loss_threshold`)?.value
+                };
+            });
+            return payload;
+        }
+
+        async function updateConfig() {
+            const button = document.getElementById("save-button");
+            const state = document.getElementById("save-state");
+            button.disabled = true;
+            state.textContent = "Збереження...";
+            try {
+                const payload = await fetchJson("/api/config", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(collectConfig())
+                });
+                configLoaded = false;
+                updateUI(payload.state);
+                state.textContent = "Збережено";
+                showToast("Налаштування збережено");
+            } catch (error) {
+                state.textContent = "Помилка";
+                showToast(error.message, true);
+            } finally {
+                button.disabled = false;
+                setTimeout(() => { state.textContent = ""; }, 2200);
+            }
+        }
+
+        async function rescanInterfaces() {
+            const button = document.getElementById("rescan-button");
+            button.disabled = true;
+            try {
+                const payload = await fetchJson("/api/rescan", { method: "POST" });
+                configLoaded = false;
+                providerDomSignature = "";
+                updateUI(payload.state);
+                showToast("Інтерфейси оновлено");
+            } catch (error) {
+                showToast(error.message, true);
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        document.getElementById("mode-select").addEventListener("change", (event) => {
+            setMode(event.target.value);
+        });
+        document.getElementById("save-button").addEventListener("click", updateConfig);
+        document.getElementById("rescan-button").addEventListener("click", rescanInterfaces);
+        document.getElementById("theme-button").addEventListener("click", () => {
+            const current = document.documentElement.getAttribute("data-theme");
+            setTheme(current === "dark" ? "light" : "dark");
+        });
+        checkboxKeys.forEach((key) => {
+            document.getElementById(key).addEventListener("change", updateConfig);
+        });
+        document.addEventListener("visibilitychange", () => {
+            if (!document.hidden) fetchStatus();
+            else schedulePoll();
+        });
+
+        setTheme(localStorage.getItem("wan-theme") || "dark");
+        fetchStatus();
+    </script>
+</body>
+</html>

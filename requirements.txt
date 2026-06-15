@@ -1,0 +1,9 @@
+# Compatible with the stock Python 3.6 on Ubuntu 18.04 / older Jetson images.
+Flask==2.0.3
+Werkzeug==2.0.3
+Jinja2==3.0.3
+MarkupSafe==2.0.1
+itsdangerous==2.0.1
+click==8.0.4
+waitress==2.0.0
+dataclasses==0.8; python_version < "3.7"

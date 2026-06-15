@@ -1,0 +1,39 @@
+[Unit]
+Description=Multi-WAN Manager for Jatson
+Wants=network-online.target
+After=network-online.target NetworkManager.service
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/opt/multiwan-manager
+EnvironmentFile=-/etc/default/multiwan-manager
+ExecStart=/opt/multiwan-manager/.venv/bin/python /opt/multiwan-manager/app.py
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=15
+KillSignal=SIGTERM
+UMask=0077
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full
+ReadWritePaths=/opt/multiwan-manager
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_RAW
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_RAW
+
+MemoryHigh=128M
+MemoryMax=192M
+TasksMax=64
+Nice=5
+
+StandardOutput=null
+StandardError=journal
+LogRateLimitIntervalSec=30s
+LogRateLimitBurst=20
+
+[Install]
+WantedBy=multi-user.target
