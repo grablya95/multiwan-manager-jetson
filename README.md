@@ -1,5 +1,5 @@
 # Multi-WAN Manager для Jetson
-
+<img width="754" height="513" alt="pic-1" src="https://github.com/user-attachments/assets/4b70d041-cce9-47c7-b4fd-da8b642ef045" />
 Веб-панель і systemd-сервіс для автоматичного перемикання між кількома WAN-інтерфейсами на NVIDIA Jetson / Linux.
 
 Сервіс перевіряє якість кожного інтернет-каналу, вибирає активний WAN, змінює default route і за потреби скидає старі з'єднання через `conntrack`.
